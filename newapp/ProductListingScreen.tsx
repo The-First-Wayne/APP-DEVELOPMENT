@@ -1,7 +1,7 @@
 // ProductListingScreen.tsx
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, FlatList, ScrollView, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from './App';
 
@@ -34,18 +34,17 @@ const getTranslations = (language: string) => {
   }
 };
 
-const ProductListingScreen: React.FC<ProductListingScreenProps> = ({ route }) => {
+const ProductListingScreen: React.FC<ProductListingScreenProps> = ({ route, navigation }) => {
   const { selectedLanguage } = route.params;
   const { searchPlaceholder, advertisement, title, farmerReviews } = getTranslations(selectedLanguage);
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sample data to demonstrate advertisements and farmer reviews
   const products = [
-    { id: '1', name: 'Product 1', isAd: true },
-    { id: '2', name: 'Product 2', isAd: true },
-    { id: '3', name: 'Product 3', isAd: true },
-    { id: '4', name: 'Product 4', isAd: true },
+    { id: '1', name: 'Product 1', isAd: true, description: 'Description of Product 1' },
+    { id: '2', name: 'Product 2', isAd: true, description: 'Description of Product 2' },
+    { id: '3', name: 'Product 3', isAd: true, description: 'Description of Product 3' },
+    { id: '4', name: 'Product 4', isAd: true, description: 'Description of Product 4' },
   ];
 
   const farmerReviewsData = [
@@ -55,18 +54,32 @@ const ProductListingScreen: React.FC<ProductListingScreenProps> = ({ route }) =>
     { id: '4', name: 'Farmer D', review: 'Loved it!' },
   ];
 
-  const renderProduct = ({ item }: { item: { id: string; name: string; isAd: boolean } }) => (
-    <View style={styles.productContainer}>
+  const handleSearch = () => {
+    const foundProduct = products.find(product => product.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (foundProduct) {
+      navigation.navigate('ProductDetailScreen', { selectedLanguage, product: foundProduct });
+    }
+  };
+
+  const handleAdClick = (product: { id: string; name: string; description: string }) => {
+    navigation.navigate('ProductDetailScreen', { selectedLanguage, product });
+  };
+
+  const renderProduct = ({ item }: { item: { id: string; name: string; isAd: boolean; description: string } }) => (
+    <TouchableOpacity
+      style={styles.productContainer}
+      onPress={() => item.isAd && handleAdClick(item)}
+    >
       <Text style={styles.productText}>
         {item.isAd ? `${advertisement}: ${item.name}` : item.name}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFarmerReview = ({ item }: { item: { id: string; name: string; review: string } }) => (
-    <View style={styles.farmerReviewContainer}>
-      <Text style={styles.farmerName}>{item.name}</Text>
-      <Text style={styles.farmerReview}>{item.review}</Text>
+    <View style={styles.reviewContainer}>
+      <Text style={styles.reviewName}>{item.name}</Text>
+      <Text style={styles.reviewText}>{item.review}</Text>
     </View>
   );
 
@@ -78,21 +91,21 @@ const ProductListingScreen: React.FC<ProductListingScreenProps> = ({ route }) =>
         placeholder={searchPlaceholder}
         value={searchQuery}
         onChangeText={setSearchQuery}
+        onSubmitEditing={handleSearch}
       />
       <FlatList
-        data={products}
+        data={products.filter(product => product.isAd)}
         renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        keyExtractor={item => item.id}
+        style={styles.advertisementList}
       />
-      <Text style={styles.sectionTitle}>{farmerReviews}</Text>
+      <Text style={styles.farmerReviewsTitle}>{farmerReviews}</Text>
       <FlatList
         data={farmerReviewsData}
         renderItem={renderFarmerReview}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.horizontalList}
+        style={styles.farmerReviewsList}
       />
     </View>
   );
@@ -101,69 +114,60 @@ const ProductListingScreen: React.FC<ProductListingScreenProps> = ({ route }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    textAlign: 'center',
   },
   searchBar: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderRadius: 5,
-    paddingLeft: 10,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  advertisementList: {
     marginBottom: 20,
   },
   productContainer: {
     padding: 15,
-    backgroundColor: '#fff',
-    marginBottom: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   productText: {
     fontSize: 18,
   },
-  sectionTitle: {
+  farmerReviewsTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginVertical: 15,
+    marginBottom: 10,
   },
-  horizontalList: {
-    paddingBottom: 20,
+  farmerReviewsList: {
+    paddingVertical: 10,
   },
-  farmerReviewContainer: {
+  reviewContainer: {
     width: 150,
     padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
     marginRight: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
-  farmerName: {
-    fontSize: 16,
+  reviewName: {
     fontWeight: 'bold',
+    marginBottom: 5,
   },
-  farmerReview: {
+  reviewText: {
     fontSize: 14,
-    color: '#555',
-    marginTop: 5,
+    color: '#333',
   },
 });
 
